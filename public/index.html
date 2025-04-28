@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldGauge | Live Gold Prices, Charts & Analysis</title>
+    <meta name="description" content="Track real-time gold prices, view historical charts, and get expert market analysis. Updated every minute with the latest gold spot prices in USD, EUR, GBP.">
+
+    <!-- Chart.js - much easier to use with CDN than Recharts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #103667;
+            --primary-light: #194b8f;
+            --secondary: #f2b705;
+            --secondary-light: #ffd04c;
+            --neutral-light: #f7f7f7;
+            --neutral-medium: #e6e6e6;
+            --neutral-dark: #333333;
+            --success: #28a745;
+            --danger: #dc3545;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --radius: 6px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--neutral-dark);
+            background-color: #fff;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--secondary);
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-light);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-light);
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .logo span {
+            color: var(--secondary);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 30px;
+        }
+
+        nav ul li a {
+            color: #fff;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 40px 0;
+            background: linear-gradient(to right, var(--primary) 0%, var(--primary-light) 100%);
+            color: #fff;
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .hero-info h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .hero-info p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        .price-card {
+            background-color: #fff;
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            color: var(--neutral-dark);
+        }
+
+        .price-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .price-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--success);
+        }
+
+        .live-indicator::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .price-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .price-change {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .price-change.up {
+            color: var(--success);
+        }
+
+        .price-change.down {
+            color: var(--danger);
+        }
+
+        .price-change i {
+            margin-right: 5px;
+        }
+
+        .price-updated {
+            font-size: 0.85rem;
+            color: #777;
+        }
+
+        /* AdSense Placements */
+        .ad-container {
+            margin: 30px 0;
+            background-color: var(--neutral-light);
+            border-radius: var(--radius);
+            padding: 15px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .ad-container.leaderboard {
+            height: 90px;
+        }
+
+        .ad-container.rectangle {
+            height: 250px;
+        }
+
+        .ad-container.half-page {
+            height: 600px;
+        }
+
+        .ad-label {
+            display: block;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        /* Dashboard Section */
+        .dashboard-section {
+            padding: 50px 0;
+            background-color: var(--neutral-light);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .chart-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chart-options button {
+            padding: 8px 15px;
+            background-color: var(--neutral-light);
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chart-options button.active {
+            background-color: var(--primary);
+            color: #fff;
+        }
+
+        .dashboard-container {
+            background-color: #fff;
+            border-radius: var(--radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-container {
+            height: 400px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .metric-card {
+            background-color: var(--neutral-light);
+            padding: 20px;
+            border-radius: var(--radius);
+            text-align: center;
+        }
+
+        .metric-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #777;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .metric-value.primary {
+            color: var(--primary);
+        }
+
+        .metric-value.success {
+            color: var(--success);
+        }
+
+        .metric-value.warning {
+            color: var(--secondary);
+        }
+
+        .metric-value.danger {
+            color: var(--danger);
+        }
+
+        .country-comparison {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: var(--neutral-light);
+            border-radius: var(--radius);
+        }
+
+        .country-comparison h3 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .comparison-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--neutral-medium);
+        }
+
+        .comparison-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .country-name {
+            width: 100px;
+            font-weight: 600;
+        }
+
+        .price-bar-container {
+            flex: 1;
+            height: 25px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 20px;
+        }
+
+        .price-bar {
+            height: 100%;
+            background-color: var(--primary);
+        }
+
+        .price-bar.india {
+            background-color: #FF9933;
+        }
+
+        .price-bar.usa {
+            background-color: #3C3B6E;
+        }
+
+        .price-bar.uk {
+            background-color: #012169;
+        }
+
+        .price-bar.uae {
+            background-color: #00732F;
+        }
+
+        .price-bar.china {
+            background-color: #DE2910;
+        }
+
+        .country-price {
+            width: 120px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .country-diff {
+            width: 80px;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        .country-diff.positive {
+            color: var(--success);
+        }
+
+        .country-diff.negative {
+            color: var(--danger);
+        }
+
+        /* Content Grid Section */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .news-section {
+            background-color: #fff;
+        }
+
+        .news-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .news-item {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 15px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--neutral-medium);
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-image {
+            width: 120px;
+            height: 80px;
+            background-color: var(--neutral-medium);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .news-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .news-content h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .news-content p {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .news-meta {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .news-meta span:not(:last-child) {
+            margin-right: 15px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .widget {
+            background-color: #fff;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .widget-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--neutral-medium);
+        }
+
+        .widget-header h3 {
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .price-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--neutral-light);
+        }
+
+        .price-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .price-item-name {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .price-item-name img {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .price-item-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .price-item-change {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .price-item-change.up {
+            color: var(--success);
+        }
+
+        .price-item-change.down {
+            color: var(--danger);
+        }
+
+        /* Market Insights Section */
+        .insights-section {
+            padding: 50px 0;
+            background-color: var(--neutral-light);
+        }
+
+        .insights-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .insight-card {
+            background-color: #fff;
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .insight-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .insight-card p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary);
+            color: #fff;
+            padding: 50px 0 20px;
+        }
+
+        .footer-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--secondary);
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-column ul li a {
+            color: #fff;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-column ul li a:hover {
+            opacity: 1;
+            text-decoration: none;
+        }
+
+        .footer-bottom {
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .insights-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .footer-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .insights-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header-container {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            nav ul {
+                margin-top: 15px;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 0 15px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .news-item {
+                grid-template-columns: 1fr;
+            }
+
+            .news-image {
+                width: 100%;
+                height: 180px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-container">
+            <div class="logo">
+                Gold<span>Gauge</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#">Prices</a></li>
+                    <li><a href="#">Charts</a></li>
+                    <li><a href="#">News</a></li>
+                    <li><a href="#">Analysis</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-info">
+                <h1>Track Live Gold Prices & Market Trends</h1>
+                <p>Get real-time gold prices, interactive charts, expert market analysis, and breaking news to make informed investment decisions.</p>
+                <a href="#" class="btn">View Price Forecasts</a>
+            </div>
+            <div class="price-card">
+                <div class="price-header">
+                    <h3>Gold Price (XAU/USD)</h3>
+                    <div class="live-indicator">LIVE</div>
+                </div>
+                <div class="price-value">$2,317.80</div>
+                <div class="price-change up">
+                    <i>▲</i> +$18.45 (+0.80%)
+                </div>
+                <div class="price-updated">Last updated: 2 minutes ago</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AdSense - Horizontal Banner -->
+    <div class="container">
+        <div class="ad-container leaderboard">
+            <span class="ad-label">Advertisement</span>
+            <!-- AdSense code would go here -->
+            <img src="/api/placeholder/728/90" alt="placeholder" />
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <section class="dashboard-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Gold Market Dashboard</h2>
+                <div class="chart-options">
+                    <button class="active" data-tab="price-tab">Price Analysis</button>
+                    <button data-tab="metrics-tab">Market Metrics</button>
+                    <button data-tab="compare-tab">Global Comparison</button>
+                </div>
+            </div>
+            <div class="dashboard-container">
+                <!-- Price Analysis Tab -->
+                <div id="price-tab" class="tab-content active">
+                    <div class="chart-options">
+                        <button class="active" data-timeframe="1W">1W</button>
+                        <button data-timeframe="1M">1M</button>
+                        <button data-timeframe="3M">3M</button>
+                        <button data-timeframe="1Y">1Y</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-title">Current Price</div>
+                            <div class="metric-value primary">₹6,250</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Daily Change</div>
+                            <div class="metric-value success">+₹42 (+0.68%)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Weekly High</div>
+                            <div class="metric-value primary">₹6,285</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Weekly Low</div>
+                            <div class="metric-value danger">₹6,180</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Metrics Tab -->
+                <div id="metrics-tab" class="tab-content">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-title">Gold/Silver Ratio</div>
+                            <div class="metric-value primary">82.3:1</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Local Premium</div>
+                            <div class="metric-value success">+4.8%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">30 Day Change</div>
+                            <div class="metric-value success">+2.8%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Volatility</div>
+                            <div class="metric-value warning">Low</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="ratioChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="premiumChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Global Comparison Tab -->
+                <div id="compare-tab" class="tab-content">
+                    <div class="chart-container">
+                        <canvas id="compareChart"></canvas>
+                    </div>
+                    <div class="country-comparison">
+                        <h3>Price Difference Analysis</h3>
+                        <div class="comparison-item">
+                            <div class="country-name">India</div>
+                            <div class="price-bar-container">
+                                <div class="price-bar india" style="width: 100%"></div>
+                            </div>
+                            <div class="country-price">₹6,250</div>
+                            <div class="country-diff positive">Baseline</div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="country-name">USA</div>
+                            <div class="price-bar-container">
+                                <div class="price-bar usa" style="width: 98.7%"></div>
+                            </div>
+                            <div class="country-price">₹6,170</div>
+                            <div class="country-diff negative">-1.3%</div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="country-name">UK</div>
+                            <div class="price-bar-container">
+                                <div class="price-bar uk" style="width: 99.4%"></div>
+                            </div>
+                            <div class="country-price">₹6,210</div>
+                            <div class="country-diff negative">-0.6%</div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="country-name">UAE</div>
+                            <div class="price-bar-container">
+                                <div class="price-bar uae" style="width: 97.6%"></div>
+                            </div>
+                            <div class="country-price">₹6,100</div>
+                            <div class="country-diff negative">-2.4%</div>
+                        </div>
+                        <div class="comparison-item">
+                            <div class="country-name">China</div>
+                            <div class="price-bar-container">
+                                <div class="price-bar china" style="width: 99.0%"></div>
+                            </div>
+                            <div class="country-price">₹6,190</div>
+                            <div class="country-diff negative">-1.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Grid with News and Sidebar -->
+    <section>
+        <div class="container content-grid">
+            <div class="news-section">
+                <div class="section-header">
+                    <h2>Latest Gold News</h2>
+                    <a href="#" class="btn btn-primary">View All News</a>
+                </div>
+                <div class="news-list">
+                    <div class="news-item">
+                        <div class="news-image">
+                            <img src="/api/placeholder/120/80" alt="placeholder" />
+                        </div>
+                        <div class="news-content">
+                            <h3><a href="#">Gold Hits New 3-Month High as Treasury Yields Fall</a></h3>
+                            <p>Gold prices surged to a three-month high on Thursday as U.S. Treasury yields retreated after weaker-than-expected economic data...</p>
+                            <div class="news-meta">
+                                <span>4 hours ago</span>
+                                <span>Market News</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="news-item">
+                        <div class="news-image">
+                            <img src="/api/placeholder/120/80" alt="placeholder" />
+                        </div>
+                        <div class="news-content">
+                            <h3><a href="#">Central Banks Continue Gold Buying Spree in Q1 2025</a></h3>
+                            <p>Central banks added 175 tonnes of gold to their reserves in the first quarter of 2025, continuing the trend of robust official sector demand...</p>
+                            <div class="news-meta">
+                                <span>Yesterday</span>
+                                <span>Analysis</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="news-item">
+                        <div class="news-image">
+                            <img src="/api/placeholder/120/80" alt="placeholder" />
+                        </div>
+                        <div class="news-content">
+                            <h3><a href="#">Gold Mining Stocks Rally as Production Costs Stabilize</a></h3>
+                            <p>Major gold mining stocks rallied on Wednesday after several companies reported stabilizing production costs despite ongoing inflationary pressures...</p>
+                            <div class="news-meta">
+                                <span>2 days ago</span>
+                                <span>Stocks</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- In-content AdSense -->
+                <div class="ad-container rectangle">
+                    <span class="ad-label">Advertisement</span>
+                    <!-- AdSense code would go here -->
+                    <img src="/api/placeholder/336/280" alt="placeholder" />
+                </div>
+            </div>
+            <div class="sidebar">
+                <!-- AdSense - Sidebar Rectangle -->
+                <div class="ad-container rectangle">
+                    <span class="ad-label">Advertisement</span>
+                    <!-- AdSense code would go here -->
+                    <img src="/api/placeholder/300/250" alt="placeholder" />
+                </div>
+
+                <!-- Price Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <h3>Precious Metals Prices</h3>
+                    </div>
+                    <div class="price-list">
+                        <div class="price-item">
+                            <div class="price-item-name">
+                                <img src="/api/placeholder/20/20" alt="placeholder" /> Gold
+                            </div>
+                            <div>
+                                <div class="price-item-value">$2,317.80</div>
+                                <div class="price-item-change up">+0.80%</div>
+                            </div>
+                        </div>
+                        <div class="price-item">
+                            <div class="price-item-name">
+                                <img src="/api/placeholder/20/20" alt="placeholder" /> Silver
+                            </div>
+                            <div>
+                                <div class="price-item-value">$27.45</div>
+                                <div class="price-item-change up">+1.20%</div>
+                            </div>
+                        </div>
+                        <div class="price-item">
+                            <div class="price-item-name">
+                                <img src="/api/placeholder/20/20" alt="placeholder" /> Platinum
+                            </div>
+                            <div>
+                                <div class="price-item-value">$980.10</div>
+                                <div class="price-item-change down">-0.35%</div>
+                            </div>
+                        </div>
+                        <div class="price-item">
+                            <div class="price-item-name">
+                                <img src="/api/placeholder/20/20" alt="placeholder" /> Palladium
+                            </div>
+                            <div>
+                                <div class="price-item-value">$1,050.25</div>
+                                <div class="price-item-change down">-0.75%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AdSense - Half Page -->
+                <div class="ad-container half-page">
+                    <span class="ad-label">Advertisement</span>
+                    <!-- AdSense code would go here -->
+                    <img src="/api/placeholder/300/600" alt="placeholder" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Market Insights Section -->
+    <section class="insights-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Market Insights</h2>
+            </div>
+            <div class="insights-container">
+                <div class="insight-card">
+                    <h3>What's Driving Gold in 2025?</h3>
+                    <p>Explore the key factors influencing gold prices this year, from monetary policy shifts to geopolitical tensions and inflation concerns.</p>
+                    <a href="#" class="btn">Read Analysis</a>
+                </div>
+                <div class="insight-card">
+                    <h3>Gold vs. Other Safe Havens</h3>
+                    <p>How does gold stack up against other traditional safe-haven assets like Treasury bonds, the US dollar, and even Bitcoin?</p>
+                    <a href="#" class="btn">Compare Assets</a>
+                </div>
+                <div class="insight-card">
+                    <h3>Expert Price Forecasts</h3>
+                    <p>Leading analysts and institutions share their gold price predictions for the remainder of 2025 and beyond.</p>
+                    <a href="#" class="btn">View Forecasts</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-container">
+                <div class="footer-column">
+                    <h3>GoldGauge</h3>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Our Team</a></li>
+                        <li><a href="#">Press</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Services</h3>
+                    <ul>
+                        <li><a href="#">Live Gold Prices</a></li>
+                        <li><a href="#">Price Alerts</a></li>
+                        <li><a href="#">Historical Data</a></li>
+                        <li><a href="#">API Access</a></li>
+                        <li><a href="#">Premium Analysis</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="#">Learning Center</a></li>
+                        <li><a href="#">Gold Investment Guide</a></li>
+                        <li><a href="#">Market Reports</a></li>
+                        <li><a href="#">Tools & Calculators</a></li>
+                        <li><a href="#">Glossary</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Connect</h3>
+                    <ul>
+                        <li><a href="#">Twitter</a></li>
+                        <li><a href="#">LinkedIn</a></li>
+                        <li><a href="#">Facebook</a></li>
+                        <li><a href="#">YouTube</a></li>
+                        <li><a href="#">Newsletter</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 GoldGauge. All rights reserved. Market data provided by XYZ Exchange. Disclaimer: The content on this website is for informational purposes only and does not constitute financial advice.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab navigation
+            const tabButtons = document.querySelectorAll('.chart-options button[data-tab]');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update button states
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Show selected tab content
+                    const tabId = button.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // Timeframe buttons
+            const timeframeButtons = document.querySelectorAll('button[data-timeframe]');
+            timeframeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    timeframeButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    updateChartData(button.getAttribute('data-timeframe'));
+                });
+            });
+
+            // Initialize charts
+            initCharts();
+
+            // Live price updates
+            initPriceUpdates();
+        });
+
+        // Chart initialization
+        function initCharts() {
+            // Price chart
+            const priceCtx = document.getElementById('priceChart').getContext('2d');
+            window.priceChart = new Chart(priceCtx, {
+                type: 'line',
+                data: {
+                    labels: [], // Will be populated with dates
+                    datasets: [{
+                        label: 'Gold Price (INR/10g)',
+                        data: [], // Will be populated with prices
+                        borderColor: '#f2b705',
+                        backgroundColor: 'rgba(242, 183, 5, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `₹${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+
+            // Gold/Silver Ratio chart
+            const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+            window.ratioChart = new Chart(ratioCtx, {
+                type: 'line',
+                data: {
+                    labels: [], // Will be populated with dates
+                    datasets: [{
+                        label: 'Gold/Silver Ratio',
+                        data: [], // Will be populated with ratio values
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw}:1`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Premium chart
+            const premiumCtx = document.getElementById('premiumChart').getContext('2d');
+            window.premiumChart = new Chart(premiumCtx, {
+                type: 'bar',
+                data: {
+                    labels: [], // Will be populated with dates
+                    datasets: [{
+                        label: 'Premium Over International Price (%)',
+                        data: [], // Will be populated with premium values
+                        backgroundColor: '#16a34a',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Country comparison chart
+            const compareCtx = document.getElementById('compareChart').getContext('2d');
+            window.compareChart = new Chart(compareCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['India', 'USA', 'UK', 'UAE', 'China'],
+                    datasets: [{
+                        label: 'Gold Price (INR/10g)',
+                        data: [6250, 6170, 6210, 6100, 6190],
+                        backgroundColor: [
+                            '#FF9933', // India
+                            '#3C3B6E', // USA
+                            '#012169', // UK
+                            '#00732F', // UAE
+                            '#DE2910'  // China
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `₹${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initialize with default timeframe data
+            updateChartData('1M');
+        }
+
+        // Update chart data based on selected timeframe
+        function updateChartData(timeframe) {
+            // Generate mock data based on timeframe
+            const { dates, prices, ratios, premiums } = generateDataForTimeframe(timeframe);
+
+            // Update price chart
+            window.priceChart.data.labels = dates;
+            window.priceChart.data.datasets[0].data = prices;
+            window.priceChart.update();
+
+            // Only update ratio and premium charts if they're visible
+            if (document.getElementById('metrics-tab').classList.contains('active')) {
+                window.ratioChart.data.labels = dates.slice(-30); // Last 30 data points
+                window.ratioChart.data.datasets[0].data = ratios;
+                window.ratioChart.update();
+
+                window.premiumChart.data.labels = dates.slice(-30); // Last 30 data points
+                window.premiumChart.data.datasets[0].data = premiums;
+                window.premiumChart.update();
+            }
+        }
+
+        // Generate mock data for charts
+        function generateDataForTimeframe(timeframe) {
+            const dates = [];
+            const prices = [];
+            const ratios = [];
+            const premiums = [];
+
+            const today = new Date();
+            let days;
+
+            switch(timeframe) {
+                case '1W': days = 7; break;
+                case '1M': days = 30; break;
+                case '3M': days = 90; break;
+                case '1Y': days = 365; break;
+                default: days = 30;
+            }
+
+            const basePrice = 6200; // Base price in INR per 10g
+            const baseRatio = 82;   // Base gold/silver ratio
+            const basePremium = 5;  // Base premium percentage
+
+            for (let i = days; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(today.getDate() - i);
+                dates.push(date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }));
+
+                // Generate realistic price fluctuations
+                const randomFactor = 0.99 + Math.random() * 0.02; // Random between 0.99 and 1.01
+                const trendFactor = 1 + (days - i) * 0.0005; // Slight upward trend
+                const price = Math.round(basePrice * randomFactor * trendFactor);
+                prices.push(price);
+
+                // Generate gold/silver ratio data for the last 30 days
+                if (i < 30) {
+                    const ratioRandomFactor = 0.99 + Math.random() * 0.02;
+                    const ratio = (baseRatio * ratioRandomFactor).toFixed(1);
+                    ratios.push(ratio);
+
+                    // Generate premium data
+                    const premiumRandomFactor = 0.8 + Math.random() * 0.4;
+                    const premium = (basePremium * premiumRandomFactor).toFixed(1);
+                    premiums.push(premium);
+                }
+            }
+
+            return { dates, prices, ratios, premiums };
+        }
+
+        // Live price update simulation
+        function initPriceUpdates() {
+            function updatePrice() {
+                const priceElement = document.querySelector('.price-value');
+                const currentPrice = parseFloat(priceElement.textContent.replace(', ''));
+
+                // Random small change
+                const change = (Math.random() - 0.45) * 2;
+                const newPrice = (currentPrice + change).toFixed(2);
+
+                // Update price
+                priceElement.textContent = ' + newPrice;
+
+                // Update change indicator
+                const changeElement = document.querySelector('.price-change');
+                const absoluteChange = Math.abs(change).toFixed(2);
+                const percentChange = (Math.abs(change) / currentPrice * 100).toFixed(2);
+
+                if (change >= 0) {
+                    changeElement.innerHTML = '<i>▲</i> + + absoluteChange + ' (+' + percentChange + '%)';
+                    changeElement.className = 'price-change up';
+                } else {
+                    changeElement.innerHTML = '<i>▼</i> - + absoluteChange + ' (-' + percentChange + '%)';
+                    changeElement.className = 'price-change down';
+                }
+
+                // Update timestamp
+                document.querySelector('.price-updated').textContent = 'Last updated: just now';
+
+                // Schedule next update
+                setTimeout(updatePrice, 30000); // Update every 30 seconds
+            }
+
+            // Start the updates after a short delay
+            setTimeout(updatePrice, 10000);
+        }
+    </script>
+</body>
+</html>
